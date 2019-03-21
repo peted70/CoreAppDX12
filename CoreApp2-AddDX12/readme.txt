@@ -10,3 +10,4 @@ projection headers for the Windows.ApplicationModel.Core namespace.
 Learn more about C++/WinRT here:
 http://aka.ms/cppwinrt/
 ========================================================================
+ 
