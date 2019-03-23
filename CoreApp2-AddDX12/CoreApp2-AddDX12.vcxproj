@@ -95,6 +95,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="d3dx12.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

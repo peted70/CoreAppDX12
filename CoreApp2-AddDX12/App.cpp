@@ -2,12 +2,25 @@
 
 using namespace winrt;
 
-using namespace Windows;
-using namespace Windows::ApplicationModel::Core;
+using namespace winrt::Windows;
+using namespace winrt::Windows::ApplicationModel::Core;
 
-using namespace Windows::Foundation::Numerics;
-using namespace Windows::UI;
-using namespace Windows::UI::Core;
+using namespace winrt::Windows::Foundation::Numerics;
+using namespace winrt::Windows::UI;
+using namespace winrt::Windows::UI::Core;
+
+// The number of swap chain back buffers.
+const uint8_t g_NumFrames = 3;
+com_ptr<ID3D12Resource> g_BackBuffers[g_NumFrames];
+
+// Use WARP adapter
+bool g_UseWarp = false;
+
+//uint32_t g_ClientWidth = 1280;
+//uint32_t g_ClientHeight = 720;
+
+// Set to true once the DX12 objects have been initialized.
+bool g_IsInitialized = false;
 
 struct App : implements<App, IFrameworkViewSource, 
 							 IFrameworkView>
@@ -17,12 +30,8 @@ struct App : implements<App, IFrameworkViewSource,
         return *this;
     }
 
-    void Initialize(CoreApplicationView const &)
+    void Initialize(CoreApplicationView const &view)
     {
-		EnableDebugLayer();
-
-		auto adapter = GetAdapter(false);
-		auto device = CreateDevice(adapter);
 
     }
 
@@ -45,6 +54,17 @@ struct App : implements<App, IFrameworkViewSource,
 
     void SetWindow(CoreWindow const & window)
     {
+		EnableDebugLayer();
+
+		auto adapter = GetAdapter(false);
+		auto device = CreateDevice(adapter);
+
+		auto cmdQueue = CreateCommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
+
+		auto width = static_cast<uint32_t>(window.Bounds().Width);
+		auto height = static_cast<uint32_t>(window.Bounds().Height);
+		CreateSwapChain(device, cmdQueue, width, height, 3);
+
         window.PointerPressed({ this, &App::OnPointerPressed });
         window.PointerMoved({ this, &App::OnPointerMoved });
 
@@ -166,9 +186,127 @@ struct App : implements<App, IFrameworkViewSource,
 
 		return d3d12Device2;
 	}
+
+	com_ptr<ID3D12CommandQueue> CreateCommandQueue(com_ptr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type)
+	{
+		com_ptr<ID3D12CommandQueue> d3d12CommandQueue;
+
+		D3D12_COMMAND_QUEUE_DESC desc = {};
+		desc.Type = type;
+		desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+		desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+		desc.NodeMask = 0;
+
+		check_hresult(device->CreateCommandQueue(&desc, __uuidof(ID3D12CommandQueue), d3d12CommandQueue.put_void()));
+
+		return d3d12CommandQueue;
+	}
+
+	bool CheckTearingSupport()
+	{
+		BOOL allowTearing = FALSE;
+
+		// Rather than create the DXGI 1.5 factory interface directly, we create the
+		// DXGI 1.4 interface and query for the 1.5 interface. This is to enable the 
+		// graphics debugging tools which will not support the 1.5 factory interface 
+		// until a future update.
+		com_ptr<IDXGIFactory4> factory4;
+		if (SUCCEEDED(CreateDXGIFactory1(__uuidof(IDXGIFactory4), factory4.put_void())))
+		{
+			com_ptr<IDXGIFactory5> factory5 = factory4.as<IDXGIFactory5>();
+			if (factory5)
+			{
+				if (FAILED(factory5->CheckFeatureSupport(
+					DXGI_FEATURE_PRESENT_ALLOW_TEARING,
+					&allowTearing, sizeof(allowTearing))))
+				{
+					allowTearing = FALSE;
+				}
+			}
+		}
+
+		return allowTearing == TRUE;
+	}
+
+	com_ptr<IDXGISwapChain4> CreateSwapChain(com_ptr<ID3D12Device2> device, com_ptr<ID3D12CommandQueue> commandQueue, 
+		uint32_t width, uint32_t height, uint32_t bufferCount)
+	{
+		com_ptr<IDXGISwapChain4> dxgiSwapChain4;
+		com_ptr<IDXGIFactory4> dxgiFactory4;
+		UINT createFactoryFlags = 0;
+#if defined(_DEBUG)
+		createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+#endif
+
+		check_hresult(CreateDXGIFactory2(createFactoryFlags, __uuidof(IDXGIFactory4), dxgiFactory4.put_void()));
+
+		DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+		swapChainDesc.Width = width;
+		swapChainDesc.Height = height;
+		swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		swapChainDesc.Stereo = FALSE;
+		swapChainDesc.SampleDesc = { 1, 0 };
+		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		swapChainDesc.BufferCount = bufferCount;
+		swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
+		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+		swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+		// It is recommended to always allow tearing if tearing support is available.
+		swapChainDesc.Flags = CheckTearingSupport() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+
+		auto coreWindow = CoreWindow::GetForCurrentThread();
+		com_ptr<IDXGISwapChain1> swapChain1;
+		check_hresult(dxgiFactory4->CreateSwapChainForCoreWindow(
+			commandQueue.get(),
+			coreWindow.try_as<IUnknown>().get(),
+			&swapChainDesc,
+			nullptr,
+			swapChain1.put()));
+
+		// Disable the Alt+Enter fullscreen toggle feature. Switching to fullscreen
+		// will be handled manually.
+		// Not sure I need to do this for CoreWindow - think about another way... 
+		// check_hresult(dxgiFactory4->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER));
+		check_pointer(swapChain1.as<IDXGISwapChain4>().get());
+
+		return dxgiSwapChain4;
+	}
+
+	com_ptr<ID3D12DescriptorHeap> CreateDescriptorHeap(com_ptr<ID3D12Device2> device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors)
+	{
+		com_ptr<ID3D12DescriptorHeap> descriptorHeap;
+
+		D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+		desc.NumDescriptors = numDescriptors;
+		desc.Type = type;
+
+		check_hresult(device->CreateDescriptorHeap(&desc, __uuidof(ID3D12DescriptorHeap), descriptorHeap.put_void()));
+
+		return descriptorHeap;
+	}
+
+	void UpdateRenderTargetViews(com_ptr<ID3D12Device2> device, com_ptr<IDXGISwapChain4> swapChain, 
+		com_ptr<ID3D12DescriptorHeap> descriptorHeap)
+	{
+		auto rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(descriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+		for (int i = 0; i < g_NumFrames; ++i)
+		{
+			com_ptr<ID3D12Resource> backBuffer;
+			check_hresult(swapChain->GetBuffer(i, __uuidof(ID3D12Resource), backBuffer.put_void()));
+
+			device->CreateRenderTargetView(backBuffer.get(), nullptr, rtvHandle);
+
+			g_BackBuffers[i] = backBuffer;
+
+			rtvHandle.Offset(rtvDescriptorSize);
+		}
+	}
 };
 
 int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
 {
-	Windows::ApplicationModel::Core::CoreApplication::Run(make<App>());
+	CoreApplication::Run(make<App>());
 }
