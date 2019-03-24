@@ -58,28 +58,6 @@ struct App : implements<App, IFrameworkViewSource,
 
     void Load(hstring const&)
     {
-    }
-
-    void Uninitialize()
-    {
-    }
-
-    void Run()
-    {
-        CoreWindow window = CoreWindow::GetForCurrentThread();
-        window.Activate();
-
-		while (true)
-		{
-			// Process events incoming to the window.
-			window.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
-			Update();
-			Render();
-		}
-    }
-
-    void SetWindow(CoreWindow const & window)
-    {
 		EnableDebugLayer();
 
 		auto adapter = GetAdapter(false);
@@ -107,6 +85,28 @@ struct App : implements<App, IFrameworkViewSource,
 		g_FenceEvent = CreateEventHandle();
 
 		g_IsInitialized = true;
+	}
+
+    void Uninitialize()
+    {
+    }
+
+    void Run()
+    {
+        CoreWindow window = CoreWindow::GetForCurrentThread();
+        window.Activate();
+
+		while (true)
+		{
+			// Process events incoming to the window.
+			window.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+			Update();
+			Render();
+		}
+    }
+
+    void SetWindow(CoreWindow const & window)
+    {
 
 		window.SizeChanged([&](auto && ...)
 			{
