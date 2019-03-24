@@ -3,6 +3,8 @@
 #include "Graphics/DX12/DX12GraphicsContext.h"
 
 #include <boost/di.hpp>
+#include "Scene/RootNode.h"
+#include "Scene/CubeMeshNode.h"
 
 namespace di = boost::di;
 
@@ -24,6 +26,8 @@ struct App : implements<App, IFrameworkViewSource,
 		di::bind<IGraphicsContext>().to<DX12GraphicsContext>()
 	);
 
+	shared_ptr<RootNode> _sceneRoot;
+
 	App()
 	{
 	}
@@ -42,6 +46,9 @@ struct App : implements<App, IFrameworkViewSource,
     {
 		_graphicsContext.reset(_injector.create<IGraphicsContext*>());
 		_graphicsContext->Initialise();
+
+		_sceneRoot = make_shared<RootNode>(0);
+		_sceneRoot->AddChild(make_shared<CubeMeshNode>());
 	}
 
     void Uninitialize()
