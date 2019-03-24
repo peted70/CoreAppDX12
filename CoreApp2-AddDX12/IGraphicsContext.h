@@ -1,6 +1,6 @@
 #pragma once
 
-class IGraphicsContext
+struct IGraphicsContext
 {
 	virtual void Initialise() = 0;
 	virtual void Update() = 0;
