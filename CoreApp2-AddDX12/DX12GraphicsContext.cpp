@@ -49,14 +49,17 @@ void DX12GraphicsContext::Initialise()
 
 void DX12GraphicsContext::Update()
 {
+	UpdateInternal();
 }
 
 void DX12GraphicsContext::Render()
 {
+	RenderInternal();
 }
 
 void DX12GraphicsContext::Resize()
 {
+	ResizeInternal();
 }
 
 void DX12GraphicsContext::EnableDebugLayer()
