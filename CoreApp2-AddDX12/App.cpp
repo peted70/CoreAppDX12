@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "IGraphicsContext.h"
-#include "DX12GraphicsContext.h"
+#include "Graphics/DX12/DX12GraphicsContext.h"
 
 #include <boost/di.hpp>
 

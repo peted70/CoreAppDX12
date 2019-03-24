@@ -95,11 +95,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="d3dx12.h" />
-    <ClInclude Include="DX12GraphicsContext.h" />
-    <ClInclude Include="Helpers.h" />
+    <ClInclude Include="BoundingBox.h" />
+    <ClInclude Include="Graphics\DX12\d3dx12.h" />
+    <ClInclude Include="Graphics\DX12\DX12GraphicsContext.h" />
     <ClInclude Include="IGraphicsContext.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Scene\CameraNode.h" />
+    <ClInclude Include="Scene\GraphContainerNode.h" />
+    <ClInclude Include="Scene\GraphNode.h" />
+    <ClInclude Include="Scene\LightNode.h" />
+    <ClInclude Include="Scene\MeshNode.h" />
+    <ClInclude Include="Scene\RootNode.h" />
+    <ClInclude Include="StepTimer.h" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -115,10 +122,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
-    <ClCompile Include="DX12GraphicsContext.cpp" />
+    <ClCompile Include="BoundingBox.cpp" />
+    <ClCompile Include="Graphics\DX12\DX12GraphicsContext.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Scene\CameraNode.cpp" />
+    <ClCompile Include="Scene\GraphContainerNode.cpp" />
+    <ClCompile Include="Scene\GraphNode.cpp" />
+    <ClCompile Include="Scene\LightNode.cpp" />
+    <ClCompile Include="Scene\MeshNode.cpp" />
+    <ClCompile Include="Scene\RootNode.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CoreApp2_AddDX12_TemporaryKey.pfx" />

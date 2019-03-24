@@ -406,7 +406,7 @@ void DX12GraphicsContext::RenderInternal()
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 		CommandList->ResourceBarrier(1, &barrier);
 
-		ThrowIfFailed(CommandList->Close());
+		check_hresult(CommandList->Close());
 
 		ID3D12CommandList* const commandLists[] = {
 			CommandList.get()
@@ -415,7 +415,7 @@ void DX12GraphicsContext::RenderInternal()
 
 		UINT syncInterval = VSync ? 1 : 0;
 		UINT presentFlags = TearingSupported && !VSync ? DXGI_PRESENT_ALLOW_TEARING : 0;
-		ThrowIfFailed(SwapChain->Present(syncInterval, presentFlags));
+		check_hresult(SwapChain->Present(syncInterval, presentFlags));
 
 		FrameFenceValues[CurrentBackBufferIndex] = Signal(CommandQueue, Fence, FenceValue);
 
