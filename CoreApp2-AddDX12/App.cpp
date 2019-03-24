@@ -2,6 +2,10 @@
 #include "IGraphicsContext.h"
 #include "DX12GraphicsContext.h"
 
+#include <boost/di.hpp>
+
+namespace di = boost::di;
+
 using namespace std;
 using namespace winrt;
 
@@ -16,6 +20,13 @@ struct App : implements<App, IFrameworkViewSource,
 							 IFrameworkView>
 {
 	unique_ptr<IGraphicsContext> _graphicsContext;
+	di::injector<IGraphicsContext *> _injector = di::make_injector(
+		di::bind<IGraphicsContext>().to<DX12GraphicsContext>()
+	);
+
+	App()
+	{
+	}
 
     IFrameworkView CreateView()
     {
@@ -29,7 +40,7 @@ struct App : implements<App, IFrameworkViewSource,
 
     void Load(hstring const&)
     {
-		_graphicsContext = make_unique<DX12GraphicsContext>();
+		_graphicsContext.reset(_injector.create<IGraphicsContext*>());
 		_graphicsContext->Initialise();
 	}
 
