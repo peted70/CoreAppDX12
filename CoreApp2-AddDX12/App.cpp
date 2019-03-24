@@ -21,7 +21,7 @@ bool g_IsInitialized = false;
 
 // By default, enable V-Sync.
 // Can be toggled with the V key.
-bool g_VSync = true;
+bool g_VSync = false;
 bool g_TearingSupported = false;
 
 // By default, use windowed mode.
@@ -69,11 +69,13 @@ struct App : implements<App, IFrameworkViewSource,
         CoreWindow window = CoreWindow::GetForCurrentThread();
         window.Activate();
 
-		Update();
-		Render();
-
-        CoreDispatcher dispatcher = window.Dispatcher();
-        dispatcher.ProcessEvents(CoreProcessEventsOption::ProcessUntilQuit);
+		while (true)
+		{
+			// Process events incoming to the window.
+			window.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+			Update();
+			Render();
+		}
     }
 
     void SetWindow(CoreWindow const & window)
